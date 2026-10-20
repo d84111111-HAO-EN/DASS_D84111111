@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>年齡與憂鬱、焦慮、壓力的關係</title>
+<style>
+:root{--bg:#f3f6f8;--card:#fff;--ink:#1f2d3a;--mute:#5b6b78;--line:#d6dee5;--accent:#2f6f8f;--tint:#eef4f8;
+--c-d:#4c7cc0;--c-a:#e59a47;--c-s:#4fa58a}
+@media (prefers-color-scheme:dark){:root{--bg:#151b21;--card:#1e262e;--ink:#e6edf2;--mute:#9fb0bd;--line:#34414d;--accent:#7cb9d6;--tint:#25303a;
+--c-d:#7ea3dc;--c-a:#eeb06a;--c-s:#75c0a6}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;line-height:1.7}
+main{max-width:920px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:1.7rem;margin:0 0 6px;letter-spacing:.02em}
+.intro{color:var(--mute);margin:0 0 20px}
+.srcbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:.85rem;color:var(--mute);margin-bottom:10px}
+.srcbar button{border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:6px;padding:2px 10px;font:inherit;cursor:pointer}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--accent);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--accent);padding:6px 14px;font:inherit;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--card)}
+.seg button:focus-visible,label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.opts label{margin-right:16px;cursor:pointer;white-space:nowrap}
+.opts input{accent-color:var(--accent)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:2px;margin:0 4px 0 2px;vertical-align:-1px}
+svg{width:100%;height:auto;display:block}
+svg text{fill:var(--ink);font-size:12px;font-family:inherit}
+.grid{stroke:var(--line)}
+#tip{position:fixed;pointer-events:none;background:#1d2b2a;color:#fff;padding:6px 10px;border-radius:6px;font-size:.85rem;display:none;z-index:9;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.tblwrap{overflow-x:auto;margin-top:16px}
+.tblwrap h3{font-size:1rem;margin:0 0 4px}
+table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:6px 10px;text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mute);font-weight:600;background:var(--tint)}
+tr:nth-child(even) td{background:color-mix(in srgb,var(--tint) 55%,transparent)}
+th[data-k]{cursor:pointer;user-select:none}
+th[data-k]:hover{color:var(--ink)}
+th[data-k]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+th .ar{display:inline-block;width:1em;color:var(--accent)}
+.notes{margin-top:18px;color:var(--mute);font-size:.9rem}
+.notes h2{font-size:1rem;color:var(--ink);margin:0 0 4px}
+.notes li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<main>
+<h1>年齡與憂鬱、焦慮、壓力的關係</h1>
+<p class="intro">本研究使用 DASS-42（憂鬱焦慮壓力量表）：共 42 題，憂鬱、焦慮、壓力三個分量表各 14 題，請受試者回想「過去一週」各項描述符合自己的頻率，並以 4 點量尺作答（1＝完全不符合，4＝非常符合或幾乎總是如此）。計分時每題先減 1 轉為 0–3 分，再將各分量表的 14 題相加，總分範圍為 0–42，分數越高表示症狀越嚴重；依各分量表總分的切截點可分為正常、輕度、中度、重度、極重度五個等級。資料來自 2017–2019 年的線上自願填答，並依年齡分組比較。</p>
+
+<div class="srcbar"><span id="src"></span><button id="reload">重新載入</button></div>
+<div class="panel">
+  <div class="controls">
+    <div class="seg" role="group" aria-label="圖表切換">
+      <button id="b1" aria-pressed="true">年齡平均數</button>
+      <button id="b2" aria-pressed="false">嚴重度分布</button>
+    </div>
+    <div class="opts" id="opts" aria-label="分量表選擇"></div>
+  </div>
+  <div id="chart"></div>
+  <div id="tbls"></div>
+</div>
+
+<div class="notes">
+  <h2>註解</h2>
+  <ul>
+    <li><b>平均數／標準差：</b>該年齡組在該分量表總分（0–42）的平均與離散程度；標準差越大，組內個別差異越大。</li>
+    <li><b>95% 信賴區間（僅圖表一的誤差線）：</b>平均數 ± t 臨界值 × 標準差 ÷ √n（n &gt; 30 時 t 接近 1.96）。區間越窄，平均數估計越穩定；超出 0–42 的部分在圖中被截斷。</li>
+    <li><b>嚴重度分布：</b>表格列出各等級人數與其占該年齡組人數的百分比，等級依原始資料所用的切截點劃分。</li>
+    <li><b>注意事項：</b>人數很少的年齡組（例如 n &lt; 30）估計極不穩定，不宜解讀趨勢；人數為 0 的年齡組沒有資料，未列入。</li>
+    <li>樣本為自願上網填答者（為取得個人化結果而參與），並非隨機抽樣，且年齡組人數懸殊（以 10–29 歲為主），結果不宜推論到一般人口；此為相關描述，不能推論因果。</li>
+  </ul>
+</div>
+</main>
+<div id="tip"></div>
+
+<script>
+const SUBS=[{k:"d",name:"憂鬱",color:"var(--c-d)"},{k:"a",name:"焦慮",color:"var(--c-a)"},{k:"s",name:"壓力",color:"var(--c-s)"}];
+
+// ===== 資料來源：Google 試算表（無法連線時改用內建的備用資料） =====
+const SHEET_ID="1bFpITpQcBy0aLL6v7Mr2WfjlIsiBe_0GXVVFJAWkfqs", SHEET_NAME="年齡層分析";
+const GVIZ=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`;
+const SHEET_URL=`${GVIZ}?tqx=out:csv&headers=0&sheet=${encodeURIComponent(SHEET_NAME)}`;
+function parseCSV(t){
+  const rows=[];let row=[],c="",q=false;
+  for(let i=0;i<t.length;i++){const ch=t[i];
+    if(q){if(ch=='"'){if(t[i+1]=='"'){c+='"';i++}else q=false}else c+=ch}
+    else if(ch=='"')q=true;
+    else if(ch==","){row.push(c);c=""}
+    else if(ch=="\n"||ch=="\r"){if(ch=="\r"&&t[i+1]=="\n")i++;row.push(c);rows.push(row);row=[];c=""}
+    else c+=ch;}
+  if(c!==""||row.length){row.push(c);rows.push(row)}
+  return rows;
+}
+function parseSheet(text){return parseRows(parseCSV(text))}
+function parseRows(rows){
+  // Google 以 CSV 輸出時，同一欄混有文字與數字的儲存格可能變成空白，
+  // 因此不依賴表頭文字（下限、正常…），改用位置與數字欄位判斷。
+  const cell=(r,i)=>((r&&r[i])||"").trim();
+  const blank=r=>!r||r.every(c=>String(c).trim()==="");
+  const num=x=>{const v=parseFloat(String(x).replace(/,/g,""));return isFinite(v)?v:NaN};
+  const h=rows.findIndex(r=>cell(r,0)=="年齡層");
+  if(h<0)throw new Error("找不到統計資料表頭「年齡層」");
+  const stats=[];
+  for(let j=h+1;j<rows.length&&!blank(rows[j])&&!cell(rows[j],0).endsWith("等級人數");j++){ // Google 可能省略空白列，所以也用區塊標題判斷結束
+    const r=rows[j],lo=num(r[1]),hi=num(r[2]);
+    stats.push({label:isNaN(lo)?cell(r,0):(lo==hi?String(lo):lo+"–"+hi),n:num(r[3]),
+      d:[num(r[4]),num(r[5])],a:[num(r[6]),num(r[7])],s:[num(r[8]),num(r[9])]});
+  }
+  const titles={d:"憂鬱等級人數",a:"焦慮等級人數",s:"壓力等級人數"},lv={};
+  for(const k in titles){
+    const t=rows.findIndex(r=>cell(r,0)==titles[k]);
+    if(t<0)throw new Error("找不到區塊標題："+titles[k]);
+    lv[k]=[];
+    // 從標題下兩列開始，取與統計表相同的列數（多出來的列忽略）
+    for(let j=t+2;j<rows.length&&lv[k].length<stats.length;j++)lv[k].push([1,2,3,4,5].map(i=>num(rows[j][i])));
+    if(lv[k].length<stats.length)throw new Error(titles[k]+"只有 "+lv[k].length+" 列，統計表有 "+stats.length+" 列");
+  }
+  const out=[];
+  stats.forEach((o,i)=>{
+    if(!(o.n>0))return; // 人數為 0（#N/A）的年齡組略過
+    if([...o.d,...o.a,...o.s].some(isNaN))throw new Error("平均或標準差不是數字："+o.label);
+    const L={};
+    for(const k in lv){
+      L[k]=lv[k][i];
+      if(L[k].some(isNaN))throw new Error("等級人數不是數字："+o.label+"（"+titles[k]+"）");
+      const sum=L[k].reduce((a,b)=>a+b,0);
+      if(sum!==o.n)throw new Error(titles[k]+"：年齡層 "+o.label+" 的等級合計 "+sum+" 與人數 "+o.n+" 不符，請檢查列的對應");
+    }
+    out.push([o.label,o.n,{d:o.d,a:o.a,s:o.s},L]);
+  });
+  return out;
+}
+// 備援：以 <script> 載入（JSONP），不受 CORS 限制，適用於直接開啟的本機檔案
+function loadViaScript(){
+  return new Promise((resolve,reject)=>{
+    const cb="__gviz_"+Date.now(),sc=document.createElement("script");
+    const done=()=>{clearTimeout(tm);delete window[cb];sc.remove()};
+    const tm=setTimeout(()=>{done();reject(new Error("逾時"))},15000);
+    window[cb]=res=>{
+      done();
+      if(!res||res.status!=="ok"||!res.table)return reject(new Error("試算表回應錯誤"));
+      resolve(res.table.rows.map(r=>(r.c||[]).map(c=>c==null||c.v==null?"":String(c.v))));
+    };
+    sc.onerror=()=>{done();reject(new Error("無法載入（請確認試算表已開啟「知道連結的任何人可檢視」）"))};
+    sc.src=`${GVIZ}?tqx=responseHandler:${cb}&headers=0&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    document.head.appendChild(sc);
+  });
+}
+async function load(){
+  const el=document.getElementById("src");
+  el.textContent="正在從 Google 試算表讀取資料…";
+  try{
+    let g;
+    try{
+      const r=await fetch(SHEET_URL,{cache:"no-store"});
+      if(!r.ok)throw new Error("HTTP "+r.status);
+      g=parseSheet(await r.text());
+    }catch(e1){
+      try{g=parseRows(await loadViaScript())}
+      catch(e2){throw new Error(e1.message+"；備援方式："+e2.message)}
+    }
+    if(!g.length)throw new Error("沒有有效資料");
+    G=g;
+    el.textContent="資料來源：Google 試算表「"+SHEET_NAME+"」，讀取時間 "+new Date().toLocaleString("zh-TW");
+  }catch(e){
+    G=FALLBACK;
+    el.textContent="無法讀取 Google 試算表（"+e.message+"），目前顯示內建的備用資料。";
+  }
+  draw();
+}
+const LV=["正常","輕度","中度","重度","極重度"];
+const LVC=["#a9cfc4","#e3d48a","#e8a860","#d9704f","#a8454a"];
+// 年齡層, n, [mean,sd]×3, 等級人數 d/a/s
+const FALLBACK=[
+["10–19",1421,{d:[22.76213934,12.03702045],a:[18.30119634,10.20656679],s:[22.66502463,10.31082269]},{d:[252,105,260,247,557],a:[248,86,235,219,633],s:[346,160,318,344,253]}],
+["20–29",2176,{d:[20.05009191,11.88178438],a:[15.37178309,9.718905087],s:[20.57077206,10.18683173]},{d:[506,229,430,359,652],a:[537,170,439,341,689],s:[675,276,521,434,270]}],
+["30–39",362,{d:[17.44751381,12.59968592],a:[11.09944751,9.054225669],s:[18.29834254,10.67445484]},{d:[127,38,55,43,99],a:[163,33,68,37,61],s:[149,56,55,64,38]}],
+["40–49",120,{d:[14.74166667,12.31484438],a:[9.516666667,9.017241499],s:[17.18333333,10.87050078]},{d:[52,14,19,11,24],a:[63,12,17,9,19],s:[54,17,18,16,15]}],
+["50–59",68,{d:[14.23529412,12.18405815],a:[7.764705882,8.199231211],s:[15.22058824,10.46650035]},{d:[34,6,11,6,11],a:[42,5,8,6,7],s:[39,7,11,6,5]}],
+["60–69",25,{d:[14.52,14.71994112],a:[9,9.746794345],s:[14.44,10.89755324]},{d:[14,2,2,1,6],a:[15,1,3,1,5],s:[14,4,3,2,2]}],
+["70–79",3,{d:[25.66666667,17.89785834],a:[8.666666667,10.69267662],s:[21,15.62049935]},{d:[1,0,0,0,2],a:[2,0,0,0,1],s:[1,0,0,2,0]}]
+];
+let G=FALLBACK;
+const T=[0,12.706,4.303,3.182,2.776,2.571,2.447,2.365,2.306,2.262,2.228,2.201,2.179,2.160,2.145,2.131,2.120,2.110,2.101,2.093,2.086,2.080,2.074,2.069,2.064,2.060,2.056,2.052,2.048,2.045,2.042];
+const tcrit=df=>df<=30?T[df]:1.96;
+const ci=(n,sd)=>tcrit(n-1)*sd/Math.sqrt(n);
+const f=(x,d=2)=>x.toFixed(d);
+const lab=g=>`${g[0]}（n=${g[1]}）`;
+
+let view=1, checked=new Set(["d","a","s"]), single="d";
+const tip=document.getElementById("tip");
+function showTip(e,html){tip.innerHTML=html;tip.style.display="block";tip.style.left=Math.min(e.clientX+14,innerWidth-200)+"px";tip.style.top=(e.clientY+14)+"px"}
+function hideTip(){tip.style.display="none"}
+function bind(el,html){el.addEventListener("mousemove",e=>showTip(e,html));el.addEventListener("mouseleave",hideTip)}
+const NS="http://www.w3.org/2000/svg";
+function mk(p,t,a,txt){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;p.appendChild(e);return e}
+
+function renderOpts(){
+  const o=document.getElementById("opts");o.innerHTML="";
+  SUBS.forEach(s=>{
+    const l=document.createElement("label");
+    const i=document.createElement("input");
+    i.type=view==1?"checkbox":"radio";i.name="sub";
+    i.checked=view==1?checked.has(s.k):single==s.k;
+    i.onchange=()=>{
+      if(view==1){
+        if(i.checked)checked.add(s.k);
+        else if(checked.size>1)checked.delete(s.k);
+        else i.checked=true; // 至少保留一個
+      }else single=s.k;
+      draw();
+    };
+    l.append(i," ");
+    const sw=document.createElement("span");sw.className="sw";if(view==1)sw.style.background=s.color;else sw.style.display="none";
+    l.append(sw,s.name);o.append(l);
+  });
+}
+
+function drawLine(){
+  const W=860,H=420,m={l:56,r:20,t:20,b:70},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const svg=mk(document.getElementById("chart"),"svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"年齡對各分量表平均數折線圖"});
+  const y=v=>m.t+ih*(1-v/42), x=i=>m.l+iw*(i+.5)/G.length;
+  for(let v=0;v<=42;v+=7){mk(svg,"line",{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),class:"grid"});mk(svg,"text",{x:m.l-8,y:y(v)+4,"text-anchor":"end"},v)}
+  mk(svg,"text",{transform:`translate(14,${m.t+ih/2}) rotate(-90)`,"text-anchor":"middle"},"分量表總分（0–42）");
+  G.forEach((g,i)=>{
+    mk(svg,"text",{x:x(i),y:H-m.b+20,"text-anchor":"middle"},g[0]);
+    mk(svg,"text",{x:x(i),y:H-m.b+36,"text-anchor":"middle",style:"fill:var(--mute)"},`n=${g[1]}`);
+  });
+  SUBS.filter(s=>checked.has(s.k)).forEach(s=>{
+    const pts=G.map((g,i)=>[x(i),y(g[2][s.k][0])]);
+    mk(svg,"polyline",{points:pts.map(p=>p.join(",")).join(" "),fill:"none",stroke:s.color,"stroke-width":2.5});
+    G.forEach((g,i)=>{
+      const [mu,sd]=g[2][s.k],h=ci(g[1],sd);
+      const lo=Math.max(0,mu-h),hi=Math.min(42,mu+h),cx=x(i)+(SUBS.indexOf(s)-1)*0; 
+      mk(svg,"line",{x1:cx,x2:cx,y1:y(lo),y2:y(hi),stroke:s.color,"stroke-width":1.5});
+      [lo,hi].forEach(v=>mk(svg,"line",{x1:cx-5,x2:cx+5,y1:y(v),y2:y(v),stroke:s.color,"stroke-width":1.5}));
+      const c=mk(svg,"circle",{cx:cx,cy:y(mu),r:5,fill:s.color,stroke:"var(--card)","stroke-width":1.5,style:"cursor:pointer"});
+      bind(c,`<b>${s.name}</b>（${lab(g)}）<br>平均數 ${f(mu)}<br>標準差 ${f(sd)}`);
+    });
+  });
+  // legend
+  let lx=m.l;SUBS.filter(s=>checked.has(s.k)).forEach(s=>{
+    mk(svg,"line",{x1:lx,x2:lx+22,y1:H-10,y2:H-10,stroke:s.color,"stroke-width":3});
+    mk(svg,"text",{x:lx+28,y:H-6},s.name);lx+=80;
+  });
+  mk(svg,"text",{x:W-m.r,y:H-6,"text-anchor":"end",style:"fill:var(--mute)"},"誤差線：95% 信賴區間");
+}
+
+function drawBar(){
+  const W=860,rowH=44,m={l:130,r:20,t:16,b:56},H=m.t+m.b+rowH*G.length,iw=W-m.l-m.r;
+  const svg=mk(document.getElementById("chart"),"svg",{viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"各年齡層嚴重度分布堆疊長條圖"});
+  const x=p=>m.l+iw*p/100, s=SUBS.find(q=>q.k==single);
+  for(let p=0;p<=100;p+=20){mk(svg,"line",{x1:x(p),x2:x(p),y1:m.t,y2:H-m.b,class:"grid"});mk(svg,"text",{x:x(p),y:H-m.b+18,"text-anchor":"middle"},p+"%")}
+  G.forEach((g,i)=>{
+    const top=m.t+i*rowH+6;
+    mk(svg,"text",{x:m.l-8,y:top+rowH/2-3,"text-anchor":"end"},lab(g));
+    let acc=0;g[3][single].forEach((c,j)=>{
+      const p=c/g[1]*100;if(p>0){
+        const r=mk(svg,"rect",{x:x(acc),y:top,width:iw*p/100,height:rowH-12,fill:LVC[j],stroke:"var(--card)","stroke-width":1});
+        bind(r,`<b>${s.name}・${LV[j]}</b><br>${f(p,1)}%（${c} 人）`);
+        if(p>=8)mk(svg,"text",{x:x(acc)+iw*p/200,y:top+(rowH-12)/2+4,"text-anchor":"middle",style:`fill:${j>2?"#fff":"#1d2b2a"};pointer-events:none`},f(p,1)+"%");
+      }acc+=p;
+    });
+  });
+  LV.forEach((n,j)=>{const lx=m.l+j*90;mk(svg,"rect",{x:lx,y:H-22,width:12,height:12,fill:LVC[j]});mk(svg,"text",{x:lx+18,y:H-12},n)});
+}
+
+const sorts={d:{k:null,dir:1},a:{k:null,dir:1},s:{k:null,dir:1}};
+function drawTable(){
+  const box=document.getElementById("tbls");box.innerHTML="";
+  SUBS.forEach(s=>{
+    const st=sorts[s.k];
+    const cols=[
+      {id:"age",label:"年齡層",v:(g,i)=>i,c:g=>g[0]},
+      {id:"n",label:"人數",v:g=>g[1],c:g=>g[1]}
+    ];
+    LV.forEach((n,j)=>cols.push({id:"l"+j,label:n,v:g=>g[3][s.k][j],c:g=>{const c=g[3][s.k][j];return c+"（"+f(c/g[1]*100,1)+"%）"}}));
+    cols.push({id:"m",label:"平均",v:g=>g[2][s.k][0],c:g=>f(g[2][s.k][0])});
+    cols.push({id:"sd",label:"標準差",v:g=>g[2][s.k][1],c:g=>f(g[2][s.k][1])});
+    const rows=G.map((g,i)=>({g,i}));
+    const sc=cols.find(c=>c.id==st.k);
+    if(sc)rows.sort((p,q)=>(sc.v(p.g,p.i)-sc.v(q.g,q.i))*st.dir||p.i-q.i);
+    const wrap=document.createElement("div");wrap.className="tblwrap";
+    const t=document.createElement("table");
+    t.innerHTML="<tr>"+cols.map(c=>{
+      const on=c.id==st.k;
+      return `<th data-k="${c.id}" tabindex="0" aria-sort="${on?(st.dir>0?"ascending":"descending"):"none"}" title="點擊排序">${c.label}<span class="ar">${on?(st.dir>0?"▲":"▼"):""}</span></th>`}).join("")+"</tr>"+
+      rows.map(r=>"<tr>"+cols.map(c=>"<td>"+c.c(r.g)+"</td>").join("")+"</tr>").join("");
+    t.querySelectorAll("th[data-k]").forEach(th=>{
+      const go=()=>{const k=th.dataset.k;if(st.k==k){if(st.dir==1)st.dir=-1;else st.k=null}else{st.k=k;st.dir=1}drawTable()};
+      th.onclick=go;th.onkeydown=e=>{if(e.key=="Enter"||e.key==" "){e.preventDefault();go()}};
+    });
+    wrap.innerHTML=`<h3><span class="sw" style="background:${s.color}"></span>${s.name}（等級欄位：人數與占該年齡組百分比）</h3>`;
+    wrap.appendChild(t);box.appendChild(wrap);
+  });
+}
+
+function draw(){
+  document.getElementById("chart").innerHTML="";hideTip();
+  view==1?drawLine():drawBar();drawTable();
+}
+function setView(v){view=v;b1.setAttribute("aria-pressed",v==1);b2.setAttribute("aria-pressed",v==2);renderOpts();draw()}
+b1.onclick=()=>setView(1);b2.onclick=()=>setView(2);
+setView(1);
+document.getElementById("reload").onclick=load;
+load();
+</script>
+</body>
+</html>
